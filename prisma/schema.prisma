@@ -1,0 +1,128 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
+  skills        String[]
+  accounts      Account[]
+  sessions      Session[]
+  applications  Application[]
+  coverLetters  CoverLetter[]
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model Application {
+  id              String            @id @default(cuid())
+  userId          String
+  user            User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  company         String
+  position        String
+  location        String?
+  salary          String?
+  url             String?
+  platform        String?
+
+  jobDescription  String?
+  aiMatchScore    Int?
+  aiAnalysis      String?
+
+  status          ApplicationStatus @default(SAVED)
+  appliedAt       DateTime?
+  respondedAt     DateTime?
+  interviewAt     DateTime?
+
+  notes           String?
+  contactName     String?
+  contactEmail    String?
+
+  coverLetters    CoverLetter[]
+  statusHistory   StatusChange[]
+
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  @@index([userId, status])
+  @@index([userId, createdAt])
+}
+
+enum ApplicationStatus {
+  SAVED
+  APPLIED
+  SCREENING
+  INTERVIEW
+  TECHNICAL
+  OFFER
+  ACCEPTED
+  REJECTED
+  WITHDRAWN
+}
+
+model StatusChange {
+  id            String            @id @default(cuid())
+  applicationId String
+  application   Application       @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  fromStatus    ApplicationStatus
+  toStatus      ApplicationStatus
+  changedAt     DateTime          @default(now())
+
+  @@index([applicationId])
+}
+
+model CoverLetter {
+  id            String      @id @default(cuid())
+  userId        String
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  applicationId String?
+  application   Application? @relation(fields: [applicationId], references: [id], onDelete: SetNull)
+  content       String
+  tone          String      @default("professional")
+  createdAt     DateTime    @default(now())
+
+  @@index([userId])
+}
